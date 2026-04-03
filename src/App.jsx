@@ -15,14 +15,20 @@ const BLDGS = {
   MARKET: { x: 14, y: 10, w: 4, h: 4, name: "Market", color: "#44ff88", emoji: "💰" }
 };
 
-const RES_POOL = [
-  { id: "r01", jp: "ナツ", role: "Fighter", color: "#ff4444" },
-  { id: "r02", jp: "ルーシィ", role: "Summoner", color: "#ffff44" },
-  { id: "r03", jp: "グレイ", role: "Mage", color: "#4444ff" },
-  { id: "r04", jp: "エルザ", role: "Knight", color: "#ff44ff" },
-  { id: "r05", jp: "ハッピー", role: "Mascot", color: "#44ffff" },
-  { id: "r06", jp: "ウェンディ", role: "Healer", color: "#88ffcc" },
-];
+const ADJECTIVES = ["歴戦の", "はらぺこ", "方向音痴の", "狂暴な", "無双の", "寝起きの", "伝説の", "見習い", "さすらいの", "剛腕の", "ドジっ子", "疾風の", "閃光の", "鉄壁の"];
+const NAMES = ["ハンター", "ゴンザレス", "勇者", "太郎", "ジョン", "スレイヤー", "ポチ", "剣士", "魔法使い", "ランサー", "盗賊", "アーチャー", "バーサーカー", "村人A", "ドラゴン", "ゴブリンキラー"];
+const ROLES = ["Fighter", "Mage", "Healer", "Hunter", "Knight", "Thief", "Merchant", "Mascot"];
+const COLORS = ["#ff4444", "#ffff44", "#4444ff", "#ff44ff", "#44ffff", "#88ffcc", "#ffaa44", "#aa44ff"];
+
+const generateRandomAgentDef = () => {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const name = NAMES[Math.floor(Math.random() * NAMES.length)];
+  const role = ROLES[Math.floor(Math.random() * ROLES.length)];
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const id = `r${Math.floor(Math.random() * 1000000)}`;
+
+  return { id, jp: `${adj}${name}`, role, color };
+};
 
 const mkAgent = (def, sx, sy) => ({
   ...def, x: sx, y: sy, tx: sx, ty: sy, timer: 0,
@@ -39,11 +45,19 @@ export default function GameApp() {
     return u.use(mplAgentIdentity());
   }, [wallet]);
 
+  const initialRecruits = useMemo(() => Array(3).fill(null).map(generateRandomAgentDef), []);
+  const initialPool = useMemo(() => Array(5).fill(null).map(generateRandomAgentDef), []);
+
   const [tp, setTp] = useState(1000);
-  const [resi, setResi] = useState(RES_POOL.slice(0, 3).map((r, i) => mkAgent(r, 4 + i * 3, 11)));
-  const [recruited, setRecruited] = useState(RES_POOL.slice(0, 3));
+  const [resi, setResi] = useState(initialRecruits.map((r, i) => mkAgent(r, 4 + i * 3, 11)));
+  const [recruited, setRecruited] = useState(initialRecruits);
+  const [recruitPool, setRecruitPool] = useState(initialPool);
   const [showRecruit, setShowRecruit] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+
+  const refreshRecruits = () => {
+    setRecruitPool(Array(5).fill(null).map(generateRandomAgentDef));
+  };
 
   // ─── Game Loop ───
   useEffect(() => {
@@ -168,9 +182,12 @@ export default function GameApp() {
               <h3 style={{ color: "#00ffcc", margin: 0 }}>🎮 RECRUIT (300 NEON)</h3>
               <button onClick={() => setShowRecruit(false)} style={{ background: "transparent", color: "#888", border: "none", cursor: "pointer", fontSize: "16px" }}>✖</button>
             </div>
-            <p style={{ fontSize: "10px", color: "#888" }}>※採用時にSolana DevnetへAgent Registryとして登録されます。</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <p style={{ fontSize: "10px", color: "#888", margin: 0 }}>※採用時にSolana DevnetへAgent Registryとして登録されます。</p>
+              <button onClick={refreshRecruits} style={{ background: "#1a2440", color: "#00ffcc", padding: "2px 6px", border: "1px solid #00ffcc33", cursor: "pointer", fontSize: "10px", borderRadius: "4px" }}>🔄 REFRESH</button>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {RES_POOL.map(r => {
+              {recruitPool.map(r => {
                 const done = !!recruited.find(x => x.id === r.id);
                 return (
                   <div key={r.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px", background: "#060a12", border: `1px solid ${r.color}22` }}>
